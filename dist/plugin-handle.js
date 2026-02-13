@@ -35,7 +35,7 @@ export function createPluginHandle(session, plugin) {
             }), rxjs.share()),
             detach() {
                 session.requestSubject.next({
-                    message: { janus: "detach" },
+                    message: { janus: "detach", handle_id: handleId },
                     stacktrace: new Error(),
                     fulfill: rxjs.noop,
                     reject: err => console.error('JanusPluginHandle detach fail', handleId, err)
