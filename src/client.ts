@@ -41,7 +41,7 @@ export function createClient(websocketUrl: string, websocketOpts?: ClientOptions
             try {
               assert(typeof event.data == 'string')
               const message = JSON.parse(event.data) as Record<string, unknown>
-              if (message.janus == 'event' && typeof message.transaction == 'undefined') {
+              if (typeof message.transaction == 'undefined') {
                 return rxjs.of(message)
               } else {
                 const pending = pendingTxs.get(message.transaction)

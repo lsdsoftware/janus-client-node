@@ -34,7 +34,7 @@ export function createClient(websocketUrl, websocketOpts) {
                 try {
                     assert(typeof event.data == 'string');
                     const message = JSON.parse(event.data);
-                    if (message.janus == 'event' && typeof message.transaction == 'undefined') {
+                    if (typeof message.transaction == 'undefined') {
                         return rxjs.of(message);
                     }
                     else {
