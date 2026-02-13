@@ -1,10 +1,16 @@
 import * as rxjs from "rxjs"
-import { JanusError, JanusRequest } from "./types.js"
+import { JanusMessage, JanusRequest } from "./types.js"
 import { request } from "./util.js"
 
-export function createSession(client: { requestSubject: rxjs.Subject<JanusRequest> }, { keepAliveInterval = 45_000 }: {
-  keepAliveInterval?: number
-} = {}) {
+export function createSession(
+  client: {
+    requestSubject: rxjs.Subject<JanusRequest>
+    receive$: rxjs.Observable<JanusMessage>
+  },
+  { keepAliveInterval = 45_000 }: {
+    keepAliveInterval?: number
+  } = {}
+) {
   return request<{ data: { id: number } }>(client.requestSubject, { janus: 'create' }).pipe(
     rxjs.map(({ data: { id: sessionId } }) => {
       const requestSubject = new rxjs.Subject<JanusRequest>()
@@ -15,13 +21,18 @@ export function createSession(client: { requestSubject: rxjs.Subject<JanusReques
             request.message.session_id = sessionId
             client.requestSubject.next(request)
             return rxjs.EMPTY
-          })
+          }),
+          rxjs.share()
+        ),
+        receive$: client.receive$.pipe(
+          rxjs.filter(message => message.session_id == sessionId),
+          rxjs.share()
         ),
         keepAlive$: requestSubject.pipe(
           rxjs.switchMap(() =>
             rxjs.interval(keepAliveInterval).pipe(
               rxjs.switchMap(() =>
-                new rxjs.Observable<JanusError>(subscriber =>
+                new rxjs.Observable<Error>(subscriber =>
                   client.requestSubject.next({
                     message: { janus: "keepalive", session_id: sessionId },
                     stacktrace: new Error(),
@@ -36,7 +47,8 @@ export function createSession(client: { requestSubject: rxjs.Subject<JanusReques
                 )
               )
             )
-          )
+          ),
+          rxjs.share()
         ),
         destroy() {
           client.requestSubject.next({

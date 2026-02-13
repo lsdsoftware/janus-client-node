@@ -17,25 +17,22 @@ export function createClient(websocketUrl: string, websocketOpts?: ClientOptions
           rxjs.concatMap(request => {
             const txId = String(Math.random())
             request.message.transaction = txId
-            return new rxjs.Observable<Error>(subscriber =>
-              conn.send(JSON.stringify(request.message), err => {
-                if (err) {
-                  subscriber.next(err)
-                  subscriber.complete()
-                } else {
-                  subscriber.complete()
-                  pendingTxs.set(txId, response => {
-                    pendingTxs.delete(txId)
-                    if (response.janus == 'error') {
-                      const { code, reason } = response.error as { code: number, reason: string }
-                      request.reject(makeJanusError(request, code, reason))
-                    } else {
-                      request.fulfill(response)
-                    }
-                  })
-                }
-              })
-            )
+            conn.send(JSON.stringify(request.message), err => {
+              if (err) {
+                request.reject(err)
+              } else {
+                pendingTxs.set(txId, response => {
+                  pendingTxs.delete(txId)
+                  if (response.janus == 'error') {
+                    const { code, reason } = response.error as { code: number, reason: string }
+                    request.reject(makeJanusError(request, code, reason))
+                  } else {
+                    request.fulfill(response)
+                  }
+                })
+              }
+            })
+            return rxjs.EMPTY
           }),
           rxjs.share()
         ),
@@ -56,8 +53,8 @@ export function createClient(websocketUrl: string, websocketOpts?: ClientOptions
                 }
               }
             } catch (err) {
-              if (err instanceof Error) err.cause = event.data
-              return rxjs.of(err)
+              console.error('JanusClient receive fail', event.data, err)
+              return rxjs.EMPTY
             }
           }),
           rxjs.share()

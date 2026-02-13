@@ -1,5 +1,5 @@
 import * as rxjs from "rxjs"
-import { JanusError, JanusMessage, JanusRequest } from "./types.js"
+import { JanusMessage, JanusRequest } from "./types.js"
 
 export function request<T extends JanusMessage>(
   requestSubject: rxjs.Subject<JanusRequest>,
@@ -21,7 +21,7 @@ export function request<T extends JanusMessage>(
   )
 }
 
-export function makeJanusError({ stacktrace, message }: JanusRequest, code: number, reason: string): JanusError {
+export function makeJanusError({ stacktrace, message }: JanusRequest, code: number, reason: string) {
   stacktrace.name = 'JanusError'
   stacktrace.cause = message
   stacktrace.message = reason

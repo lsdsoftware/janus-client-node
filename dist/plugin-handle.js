@@ -28,7 +28,11 @@ export function createPluginHandle(session, plugin) {
                     }
                 });
                 return rxjs.EMPTY;
-            })),
+            }), rxjs.share()),
+            receive$: session.receive$.pipe(rxjs.filter(message => message.handle_id == handleId), rxjs.map(message => {
+                const { data } = message.plugindata;
+                return data;
+            }), rxjs.share()),
             detach() {
                 session.requestSubject.next({
                     message: { janus: "detach" },

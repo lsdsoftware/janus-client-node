@@ -1,8 +1,14 @@
 import * as rxjs from "rxjs"
-import { JanusRequest } from "./types.js"
+import { JanusMessage, JanusRequest } from "./types.js"
 import { makeJanusError, request } from "./util.js"
 
-export function createPluginHandle(session: { requestSubject: rxjs.Subject<JanusRequest> }, plugin: string) {
+export function createPluginHandle(
+  session: {
+    requestSubject: rxjs.Subject<JanusRequest>
+    receive$: rxjs.Observable<JanusMessage>
+  },
+  plugin: string
+) {
   return request<{ data: { id: number } }>(session.requestSubject, { janus: "attach", plugin }).pipe(
     rxjs.map(({ data: { id: handleId }}) => {
       const requestSubject = new rxjs.Subject<JanusRequest>()
@@ -31,7 +37,16 @@ export function createPluginHandle(session: { requestSubject: rxjs.Subject<Janus
               }
             })
             return rxjs.EMPTY
-          })
+          }),
+          rxjs.share()
+        ),
+        receive$: session.receive$.pipe(
+          rxjs.filter(message => message.handle_id == handleId),
+          rxjs.map(message => {
+            const { data } = message.plugindata as { data: Record<string, unknown> }
+            return data
+          }),
+          rxjs.share()
         ),
         detach() {
           session.requestSubject.next({

@@ -11,13 +11,11 @@ export function createClient(websocketUrl, websocketOpts) {
             send$: requestSubject.pipe(rxjs.concatMap(request => {
                 const txId = String(Math.random());
                 request.message.transaction = txId;
-                return new rxjs.Observable(subscriber => conn.send(JSON.stringify(request.message), err => {
+                conn.send(JSON.stringify(request.message), err => {
                     if (err) {
-                        subscriber.next(err);
-                        subscriber.complete();
+                        request.reject(err);
                     }
                     else {
-                        subscriber.complete();
                         pendingTxs.set(txId, response => {
                             pendingTxs.delete(txId);
                             if (response.janus == 'error') {
@@ -29,7 +27,8 @@ export function createClient(websocketUrl, websocketOpts) {
                             }
                         });
                     }
-                }));
+                });
+                return rxjs.EMPTY;
             }), rxjs.share()),
             receive$: conn.message$.pipe(rxjs.concatMap(event => {
                 try {
@@ -50,9 +49,8 @@ export function createClient(websocketUrl, websocketOpts) {
                     }
                 }
                 catch (err) {
-                    if (err instanceof Error)
-                        err.cause = event.data;
-                    return rxjs.of(err);
+                    console.error('JanusClient receive fail', event.data, err);
+                    return rxjs.EMPTY;
                 }
             }), rxjs.share()),
             close$: conn.close$,
