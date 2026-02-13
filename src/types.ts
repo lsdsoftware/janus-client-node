@@ -1,9 +1,7 @@
 
-export type JanusMessage = Record<string, unknown>
-
 export interface JanusRequest {
-  readonly message: JanusMessage
+  readonly message: Record<string, unknown>
   readonly stacktrace: Error
-  fulfill(response: JanusMessage): void
+  fulfill(response: Record<string, unknown>): void
   reject(err: Error): void
 }

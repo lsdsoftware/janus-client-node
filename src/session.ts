@@ -1,11 +1,11 @@
 import * as rxjs from "rxjs"
-import { JanusMessage, JanusRequest } from "./types.js"
+import { JanusRequest } from "./types.js"
 import { request } from "./util.js"
 
 export function createSession(
   client: {
     requestSubject: rxjs.Subject<JanusRequest>
-    receive$: rxjs.Observable<JanusMessage>
+    receive$: rxjs.Observable<Record<string, unknown>>
   },
   { keepAliveInterval = 45_000 }: {
     keepAliveInterval?: number

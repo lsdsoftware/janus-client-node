@@ -1,9 +1,9 @@
 import * as rxjs from "rxjs"
-import { JanusMessage, JanusRequest } from "./types.js"
+import { JanusRequest } from "./types.js"
 
-export function request<T extends JanusMessage>(
+export function request<T>(
   requestSubject: rxjs.Subject<JanusRequest>,
-  message: JanusMessage
+  message: Record<string, unknown>
 ) {
   const stacktrace = new Error()
   return new rxjs.Observable<T>(subscriber =>

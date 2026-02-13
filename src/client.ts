@@ -3,14 +3,14 @@ import assert from "assert"
 import { ClientRequestArgs } from "http"
 import * as rxjs from "rxjs"
 import { ClientOptions } from "ws"
-import { JanusMessage, JanusRequest } from "./types.js"
+import { JanusRequest } from "./types.js"
 import { makeJanusError } from "./util.js"
 
 export function createClient(websocketUrl: string, websocketOpts?: ClientOptions | ClientRequestArgs) {
   return connect(websocketUrl, websocketOpts, 'janus-protocol').pipe(
     rxjs.map(conn => {
       const requestSubject = new rxjs.Subject<JanusRequest>()
-      const pendingTxs = new Map<unknown, (response: JanusMessage) => void>()
+      const pendingTxs = new Map<unknown, (response: Record<string, unknown>) => void>()
       return {
         requestSubject,
         send$: requestSubject.pipe(
@@ -40,7 +40,7 @@ export function createClient(websocketUrl: string, websocketOpts?: ClientOptions
           rxjs.concatMap(event => {
             try {
               assert(typeof event.data == 'string')
-              const message = JSON.parse(event.data) as JanusMessage
+              const message = JSON.parse(event.data) as Record<string, unknown>
               if (message.janus == 'event' && typeof message.transaction == 'undefined') {
                 return rxjs.of(message)
               } else {
