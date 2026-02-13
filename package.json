@@ -1,0 +1,35 @@
+{
+  "name": "@lsdsoftware/janus-client-node",
+  "version": "1.0.0",
+  "description": "Janus WebSocket client for Node, built on RxJS observables",
+  "keywords": [
+    "janus",
+    "janus-client",
+    "janus-gateway",
+    "websocket",
+    "rxjs"
+  ],
+  "homepage": "https://github.com/lsdsoftware/janus-client-node#readme",
+  "bugs": {
+    "url": "https://github.com/lsdsoftware/janus-client-node/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lsdsoftware/janus-client-node.git"
+  },
+  "license": "MIT",
+  "author": "Hai Phan <hai.phan@gmail.com>",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "node dist/index.test.js"
+  },
+  "dependencies": {
+    "@service-broker/websocket": "^1.1.0"
+  },
+  "devDependencies": {
+    "@service-broker/test-utils": "^1.1.2",
+    "typescript": "^5.9.3"
+  }
+}
