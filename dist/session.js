@@ -24,7 +24,7 @@ export function createSession(client, { keepAliveInterval = 45_000 } = {}) {
             }))))), rxjs.share()),
             destroy() {
                 client.requestSubject.next({
-                    message: { janus: 'destroy' },
+                    message: { janus: 'destroy', session_id: sessionId },
                     stacktrace: new Error(),
                     fulfill: rxjs.noop,
                     reject: err => console.error('JanusSession destroy fail', sessionId, err)
