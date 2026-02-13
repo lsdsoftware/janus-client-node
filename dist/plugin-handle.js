@@ -1,6 +1,5 @@
 import * as rxjs from "rxjs";
-import { JanusError } from "./types.js";
-import { request } from "./util.js";
+import { makeJanusError, request } from "./util.js";
 export function createPluginHandle(session, plugin) {
     return request(session.requestSubject, { janus: "attach", plugin }).pipe(rxjs.map(({ data: { id: handleId } }) => {
         const requestSubject = new rxjs.Subject();
@@ -13,11 +12,12 @@ export function createPluginHandle(session, plugin) {
                         handle_id: handleId,
                         body: request.message
                     },
+                    stacktrace: request.stacktrace,
                     fulfill(response) {
                         const { data } = response.plugindata;
                         if (data.error) {
                             const { error, error_code } = data;
-                            request.reject(new JanusError(error_code, error));
+                            request.reject(makeJanusError(this, error_code, error));
                         }
                         else {
                             request.fulfill(data);
@@ -32,6 +32,7 @@ export function createPluginHandle(session, plugin) {
             detach() {
                 session.requestSubject.next({
                     message: { janus: "detach" },
+                    stacktrace: new Error(),
                     fulfill: rxjs.noop,
                     reject: err => console.error('JanusPluginHandle detach fail', handleId, err)
                 });

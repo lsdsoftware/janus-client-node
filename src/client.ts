@@ -3,13 +3,14 @@ import assert from "assert"
 import { ClientRequestArgs } from "http"
 import * as rxjs from "rxjs"
 import { ClientOptions } from "ws"
-import { JanusError, JanusMessage, JanusRequest } from "./types.js"
+import { JanusMessage, JanusRequest } from "./types.js"
+import { makeJanusError } from "./util.js"
 
 export function createClient(websocketUrl: string, websocketOpts?: ClientOptions | ClientRequestArgs) {
   return connect(websocketUrl, websocketOpts, 'janus-protocol').pipe(
     rxjs.map(conn => {
       const requestSubject = new rxjs.Subject<JanusRequest>()
-      const pendingRequests = new Map<unknown, JanusRequest>()
+      const pendingTxs = new Map<unknown, (response: JanusMessage) => void>()
       return {
         requestSubject,
         send$: requestSubject.pipe(
@@ -19,11 +20,19 @@ export function createClient(websocketUrl: string, websocketOpts?: ClientOptions
             return new rxjs.Observable<Error>(subscriber =>
               conn.send(JSON.stringify(request.message), err => {
                 if (err) {
-                  subscriber.next(new Error('JanusClient sendMessage fail', { cause: err }))
+                  subscriber.next(err)
                   subscriber.complete()
                 } else {
                   subscriber.complete()
-                  pendingRequests.set(txId, request)
+                  pendingTxs.set(txId, response => {
+                    pendingTxs.delete(txId)
+                    if (response.janus == 'error') {
+                      const { code, reason } = response.error as { code: number, reason: string }
+                      request.reject(makeJanusError(request, code, reason))
+                    } else {
+                      request.fulfill(response)
+                    }
+                  })
                 }
               })
             )
@@ -38,15 +47,9 @@ export function createClient(websocketUrl: string, websocketOpts?: ClientOptions
               if (message.janus == 'event' && typeof message.transaction == 'undefined') {
                 return rxjs.of(message)
               } else {
-                const request = pendingRequests.get(message.transaction)
-                if (request) {
-                  pendingRequests.delete(message.transaction)
-                  if (message.janus == 'error') {
-                    const { code, reason } = message.error as { code: number, reason: string }
-                    request.reject(new JanusError(code, reason))
-                  } else {
-                    request.fulfill(message)
-                  }
+                const pending = pendingTxs.get(message.transaction)
+                if (pending) {
+                  pending(message)
                   return rxjs.EMPTY
                 } else {
                   throw new Error('Stray')
@@ -54,7 +57,7 @@ export function createClient(websocketUrl: string, websocketOpts?: ClientOptions
               }
             } catch (err) {
               if (err instanceof Error) err.cause = event.data
-              return rxjs.of(new Error('JanusClient processMessage fail', { cause: err }))
+              return rxjs.of(err)
             }
           }),
           rxjs.share()

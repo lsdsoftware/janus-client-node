@@ -1,7 +1,7 @@
 import { afterEverything, describe, expect, Expectation } from "@service-broker/test-utils"
 import assert from "assert"
 import * as rxjs from "rxjs"
-import { createClient, createPluginHandle, createSession, JanusError, JanusRequest, request } from "./index.js"
+import { createClient, createPluginHandle, createSession, JanusRequest, request } from "./index.js"
 
 const requestSubject = new rxjs.ReplaySubject<JanusRequest>()
 const shutdownSubject = new rxjs.Subject<void>()
@@ -52,7 +52,6 @@ createClient(process.env.JANUS_URL).pipe(
 ).subscribe({
   next(event) {
     if (event instanceof Error) console.error(event)
-    else if (event instanceof JanusError) console.error('JanusError', event)
     else console.info('Unhandled', event)
   },
   error(err) {

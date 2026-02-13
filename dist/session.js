@@ -12,6 +12,7 @@ export function createSession(client, { keepAliveInterval = 45_000 } = {}) {
             })),
             keepAlive$: requestSubject.pipe(rxjs.switchMap(() => rxjs.interval(keepAliveInterval).pipe(rxjs.switchMap(() => new rxjs.Observable(subscriber => client.requestSubject.next({
                 message: { janus: "keepalive", session_id: sessionId },
+                stacktrace: new Error(),
                 fulfill() {
                     subscriber.complete();
                 },
@@ -23,6 +24,7 @@ export function createSession(client, { keepAliveInterval = 45_000 } = {}) {
             destroy() {
                 client.requestSubject.next({
                     message: { janus: 'destroy' },
+                    stacktrace: new Error(),
                     fulfill: rxjs.noop,
                     reject: err => console.error('JanusSession destroy fail', sessionId, err)
                 });

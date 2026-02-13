@@ -24,6 +24,7 @@ export function createSession(client: { requestSubject: rxjs.Subject<JanusReques
                 new rxjs.Observable<JanusError>(subscriber =>
                   client.requestSubject.next({
                     message: { janus: "keepalive", session_id: sessionId },
+                    stacktrace: new Error(),
                     fulfill() {
                       subscriber.complete()
                     },
@@ -40,6 +41,7 @@ export function createSession(client: { requestSubject: rxjs.Subject<JanusReques
         destroy() {
           client.requestSubject.next({
             message: { janus: 'destroy' },
+            stacktrace: new Error(),
             fulfill: rxjs.noop,
             reject: err => console.error('JanusSession destroy fail', sessionId, err)
           })

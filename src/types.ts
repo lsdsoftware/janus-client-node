@@ -1,12 +1,11 @@
 
 export type JanusMessage = Record<string, unknown>
 
-export class JanusError {
-  constructor(readonly code: number, readonly reason: string) {}
-}
+export type JanusError = Error & { code: number }
 
 export interface JanusRequest {
   readonly message: JanusMessage
+  readonly stacktrace: Error
   fulfill(response: JanusMessage): void
   reject(err: JanusError): void
 }

@@ -1,7 +1,7 @@
 import { afterEverything, describe, expect, Expectation } from "@service-broker/test-utils";
 import assert from "assert";
 import * as rxjs from "rxjs";
-import { createClient, createPluginHandle, createSession, JanusError, request } from "./index.js";
+import { createClient, createPluginHandle, createSession, request } from "./index.js";
 const requestSubject = new rxjs.ReplaySubject();
 const shutdownSubject = new rxjs.Subject();
 assert(process.env.JANUS_URL, 'Missing env JANUS_URL');
@@ -15,8 +15,6 @@ rxjs.exhaustMap(client => rxjs.merge(client.send$, client.receive$, createSessio
     next(event) {
         if (event instanceof Error)
             console.error(event);
-        else if (event instanceof JanusError)
-            console.error('JanusError', event);
         else
             console.info('Unhandled', event);
     },
