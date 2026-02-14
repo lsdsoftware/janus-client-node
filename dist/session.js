@@ -11,7 +11,7 @@ export function createSession(client, { keepAliveInterval = 45_000 } = {}) {
                 return rxjs.EMPTY;
             }), rxjs.share()),
             receive$: client.receive$.pipe(rxjs.filter(message => message.session_id == sessionId), rxjs.share()),
-            keepAlive$: requestSubject.pipe(rxjs.switchMap(() => rxjs.interval(keepAliveInterval).pipe(rxjs.switchMap(() => new rxjs.Observable(subscriber => client.requestSubject.next({
+            keepAlive$: requestSubject.pipe(rxjs.startWith(null), rxjs.switchMap(() => rxjs.interval(keepAliveInterval).pipe(rxjs.switchMap(() => new rxjs.Observable(subscriber => client.requestSubject.next({
                 message: { janus: "keepalive", session_id: sessionId },
                 stacktrace: new Error(),
                 fulfill() {

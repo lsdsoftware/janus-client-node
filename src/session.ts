@@ -29,6 +29,7 @@ export function createSession(
           rxjs.share()
         ),
         keepAlive$: requestSubject.pipe(
+          rxjs.startWith(null),
           rxjs.switchMap(() =>
             rxjs.interval(keepAliveInterval).pipe(
               rxjs.switchMap(() =>
