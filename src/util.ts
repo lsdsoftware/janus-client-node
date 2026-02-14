@@ -3,12 +3,14 @@ import { JanusRequest } from "./types.js"
 
 export function request<T>(
   requestSubject: rxjs.Subject<JanusRequest>,
-  message: Record<string, unknown>
+  message: Record<string, unknown>,
+  { timeout }: { timeout?: number } = {}
 ) {
   const stacktrace = new Error()
   return new rxjs.Observable<T>(subscriber =>
     requestSubject.next({
       message,
+      timeout,
       stacktrace,
       fulfill(response) {
         subscriber.next(response as T)

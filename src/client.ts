@@ -14,25 +14,55 @@ export function createClient(websocketUrl: string, websocketOpts?: ClientOptions
       return {
         requestSubject,
         send$: requestSubject.pipe(
-          rxjs.concatMap(request => {
+          rxjs.mergeMap(request => {
             const txId = String(Math.random())
             request.message.transaction = txId
-            conn.send(JSON.stringify(request.message), err => {
-              if (err) {
-                request.reject(err)
-              } else {
-                pendingTxs.set(txId, response => {
-                  pendingTxs.delete(txId)
-                  if (response.janus == 'error') {
-                    const { code, reason } = response.error as { code: number, reason: string }
-                    request.reject(makeJanusError(request, code, reason))
-                  } else {
-                    request.fulfill(response)
+            return new rxjs.Observable<Error | undefined>(subscriber =>
+              conn.send(JSON.stringify(request.message), err => {
+                subscriber.next(err)
+                subscriber.complete()
+              })
+            ).pipe(
+              rxjs.exhaustMap(err => {
+                if (err) {
+                  request.reject(err)
+                  return rxjs.EMPTY
+                } else {
+                  function waitResponse(timeout: number) {
+                    return new rxjs.Observable<Record<string, unknown>>(subscriber => {
+                      pendingTxs.set(txId, response => {
+                        subscriber.next(response)
+                        subscriber.complete()
+                      })
+                      return () => pendingTxs.delete(txId)
+                    }).pipe(
+                      timeout == Infinity ? rxjs.identity : rxjs.timeout({
+                        first: timeout,
+                        with: () => rxjs.of({ janus: 'error', error: { code: 408, reason: 'Request timeout' } })
+                      })
+                    )
                   }
-                })
-              }
-            })
-            return rxjs.EMPTY
+                  return waitResponse(30_000).pipe(
+                    rxjs.exhaustMap(response =>
+                      rxjs.iif(
+                        () => response.janus == 'ack',
+                        waitResponse(request.timeout ?? 300_000),
+                        rxjs.of(response)
+                      )
+                    ),
+                    rxjs.exhaustMap(response => {
+                      if (response.janus == 'error') {
+                        const { code, reason } = response.error as { code: number, reason: string }
+                        request.reject(makeJanusError(request, code, reason))
+                      } else {
+                        request.fulfill(response)
+                      }
+                      return rxjs.EMPTY
+                    })
+                  )
+                }
+              })
+            )
           }),
           rxjs.share()
         ),
@@ -59,7 +89,12 @@ export function createClient(websocketUrl: string, websocketOpts?: ClientOptions
           }),
           rxjs.share()
         ),
-        close$: conn.close$,
+        close$: conn.close$.pipe(
+          rxjs.tap(() => {
+            for (const pending of pendingTxs.values())
+              pending({ janus: 'error', error: { code: 503, reason: 'Connection closed before response was received' }})
+          })
+        ),
         close: conn.close.bind(conn)
       }
     })

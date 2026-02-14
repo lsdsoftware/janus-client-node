@@ -1,8 +1,9 @@
 import * as rxjs from "rxjs";
-export function request(requestSubject, message) {
+export function request(requestSubject, message, { timeout } = {}) {
     const stacktrace = new Error();
     return new rxjs.Observable(subscriber => requestSubject.next({
         message,
+        timeout,
         stacktrace,
         fulfill(response) {
             subscriber.next(response);
