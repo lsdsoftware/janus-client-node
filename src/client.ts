@@ -3,12 +3,15 @@ import assert from "assert"
 import { ClientRequestArgs } from "http"
 import * as rxjs from "rxjs"
 import { ClientOptions } from "ws"
-import { JanusRequest } from "./types.js"
+import { JanusClient, JanusRequest } from "./types.js"
 import { makeJanusError } from "./util.js"
 
-export function createClient(websocketUrl: string, websocketOpts?: ClientOptions | ClientRequestArgs) {
+export function createClient(
+  websocketUrl: string,
+  websocketOpts?: ClientOptions | ClientRequestArgs
+) {
   return connect(websocketUrl, websocketOpts, 'janus-protocol').pipe(
-    rxjs.map(conn => {
+    rxjs.map((conn): JanusClient => {
       const requestSubject = new rxjs.Subject<JanusRequest>()
       const pendingTxs = new Map<unknown, (response: Record<string, unknown>) => void>()
       return {

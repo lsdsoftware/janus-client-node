@@ -1,16 +1,13 @@
 import * as rxjs from "rxjs"
-import { JanusRequest } from "./types.js"
+import { JanusPluginHandle, JanusRequest, JanusSession } from "./types.js"
 import { makeJanusError, request } from "./util.js"
 
 export function createPluginHandle(
-  session: {
-    requestSubject: rxjs.Subject<JanusRequest>
-    receive$: rxjs.Observable<Record<string, unknown>>
-  },
+  session: JanusSession,
   plugin: string
 ) {
   return request<{ data: { id: number } }>(session.requestSubject, { janus: "attach", plugin }).pipe(
-    rxjs.map(({ data: { id: handleId }}) => {
+    rxjs.map(({ data: { id: handleId }}): JanusPluginHandle => {
       const requestSubject = new rxjs.Subject<JanusRequest>()
       return {
         requestSubject,

@@ -1,18 +1,15 @@
 import * as rxjs from "rxjs"
-import { JanusRequest } from "./types.js"
+import { JanusClient, JanusRequest, JanusSession } from "./types.js"
 import { request } from "./util.js"
 
 export function createSession(
-  client: {
-    requestSubject: rxjs.Subject<JanusRequest>
-    receive$: rxjs.Observable<Record<string, unknown>>
-  },
+  client: JanusClient,
   { keepAliveInterval = 45_000 }: {
     keepAliveInterval?: number
   } = {}
 ) {
   return request<{ data: { id: number } }>(client.requestSubject, { janus: 'create' }).pipe(
-    rxjs.map(({ data: { id: sessionId } }) => {
+    rxjs.map(({ data: { id: sessionId } }): JanusSession => {
       const requestSubject = new rxjs.Subject<JanusRequest>()
       return {
         requestSubject,

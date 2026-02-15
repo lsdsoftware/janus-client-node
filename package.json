@@ -1,6 +1,6 @@
 {
   "name": "@lsdsoftware/janus-client-node",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Janus WebSocket client for Node, built on RxJS observables",
   "keywords": [
     "janus",

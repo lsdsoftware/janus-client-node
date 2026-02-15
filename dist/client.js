@@ -3,7 +3,7 @@ import assert from "assert";
 import * as rxjs from "rxjs";
 import { makeJanusError } from "./util.js";
 export function createClient(websocketUrl, websocketOpts) {
-    return connect(websocketUrl, websocketOpts, 'janus-protocol').pipe(rxjs.map(conn => {
+    return connect(websocketUrl, websocketOpts, 'janus-protocol').pipe(rxjs.map((conn) => {
         const requestSubject = new rxjs.Subject();
         const pendingTxs = new Map();
         return {
