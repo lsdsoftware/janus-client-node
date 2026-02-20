@@ -38,7 +38,16 @@ export function createClient(websocketUrl, websocketOpts) {
                                 request.reject(makeJanusError(request, code, reason));
                             }
                             else {
-                                request.fulfill(response);
+                                try {
+                                    request.fulfill(response);
+                                }
+                                catch (err) {
+                                    if (err instanceof Error && !err.cause)
+                                        err.cause = response;
+                                    request.stacktrace.cause = err;
+                                    request.stacktrace.message = 'Fail to handle Janus response';
+                                    request.reject(request.stacktrace);
+                                }
                             }
                             return rxjs.EMPTY;
                         }));
