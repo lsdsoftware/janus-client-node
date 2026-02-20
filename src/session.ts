@@ -34,12 +34,16 @@ export function createSession(
                   client.requestSubject.next({
                     message: { janus: "keepalive", session_id: sessionId },
                     stacktrace: new Error(),
-                    fulfill() {
-                      subscriber.complete()
-                    },
-                    reject(err) {
-                      subscriber.next(err)
-                      subscriber.complete()
+                    callback(result) {
+                      result.match(
+                        () => {
+                          subscriber.complete()
+                        },
+                        err => {
+                          subscriber.next(err)
+                          subscriber.complete()
+                        }
+                      )
                     }
                   })
                 )
@@ -52,8 +56,11 @@ export function createSession(
           client.requestSubject.next({
             message: { janus: 'destroy', session_id: sessionId },
             stacktrace: new Error(),
-            fulfill: rxjs.noop,
-            reject: err => console.error('JanusSession destroy fail', sessionId, err)
+            callback(result) {
+              result.orTee(err =>
+                console.error('JanusSession destroy fail', sessionId, err)
+              )
+            }
           })
         }
       }

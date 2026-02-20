@@ -1,5 +1,6 @@
 import { connect } from "@service-broker/websocket";
 import assert from "assert";
+import { err as error, ok } from "neverthrow";
 import * as rxjs from "rxjs";
 import { makeJanusError } from "./util.js";
 export function createClient(websocketUrl, websocketOpts) {
@@ -16,7 +17,7 @@ export function createClient(websocketUrl, websocketOpts) {
                     subscriber.complete();
                 })).pipe(rxjs.exhaustMap(err => {
                     if (err) {
-                        request.reject(err);
+                        request.callback(error(err));
                         return rxjs.EMPTY;
                     }
                     else {
@@ -35,18 +36,18 @@ export function createClient(websocketUrl, websocketOpts) {
                         return waitResponse(30_000).pipe(rxjs.exhaustMap(response => rxjs.iif(() => response.janus == 'ack', waitResponse(request.timeout ?? 300_000), rxjs.of(response))), rxjs.exhaustMap(response => {
                             if (response.janus == 'error') {
                                 const { code, reason } = response.error;
-                                request.reject(makeJanusError(request, code, reason));
+                                request.callback(error(makeJanusError(request, code, reason)));
                             }
                             else {
                                 try {
-                                    request.fulfill(response);
+                                    request.callback(ok(response));
                                 }
                                 catch (err) {
                                     if (err instanceof Error && !err.cause)
                                         err.cause = response;
                                     request.stacktrace.cause = err;
                                     request.stacktrace.message = 'Fail to handle Janus response';
-                                    request.reject(request.stacktrace);
+                                    request.callback(error(request.stacktrace));
                                 }
                             }
                             return rxjs.EMPTY;

@@ -1,3 +1,4 @@
+import { err, ok } from "neverthrow"
 import * as rxjs from "rxjs"
 import { JanusPluginHandle, JanusRequest, JanusSession } from "./types.js"
 import { makeJanusError, request } from "./util.js"
@@ -20,17 +21,18 @@ export function createPluginHandle(
                 body: request.message
               },
               stacktrace: request.stacktrace,
-              fulfill(response) {
-                const { data } = response.plugindata as { data: Record<string, unknown> }
-                if (data.error) {
-                  const { error, error_code } = data as { error: string, error_code: number }
-                  request.reject(makeJanusError(this, error_code, error))
-                } else {
-                  request.fulfill(data)
-                }
-              },
-              reject(err) {
-                request.reject(err)
+              callback(result) {
+                request.callback(
+                  result.andThen(response => {
+                    const { data } = response.plugindata as { data: Record<string, unknown> }
+                    if (data.error) {
+                      const { error, error_code } = data as { error: string, error_code: number }
+                      return err(makeJanusError(this, error_code, error))
+                    } else {
+                      return ok(data)
+                    }
+                  })
+                )
               }
             })
             return rxjs.EMPTY
@@ -49,8 +51,11 @@ export function createPluginHandle(
           session.requestSubject.next({
             message: { janus: "detach", handle_id: handleId },
             stacktrace: new Error(),
-            fulfill: rxjs.noop,
-            reject: err => console.error('JanusPluginHandle detach fail', handleId, err)
+            callback(result) {
+              result.orTee(err =>
+                console.error('JanusPluginHandle detach fail', handleId, err)
+              )
+            }
           })
         }
       }

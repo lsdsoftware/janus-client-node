@@ -1,6 +1,6 @@
 {
   "name": "@lsdsoftware/janus-client-node",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "description": "Janus WebSocket client for Node, built on RxJS observables",
   "keywords": [
     "janus",
@@ -26,7 +26,8 @@
     "test": "node dist/index.test.js"
   },
   "dependencies": {
-    "@service-broker/websocket": "^1.1.0"
+    "@service-broker/websocket": "^1.1.0",
+    "neverthrow": "^8.2.0"
   },
   "devDependencies": {
     "@service-broker/test-utils": "^1.1.2",

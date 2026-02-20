@@ -14,20 +14,22 @@ export function createSession(client, { keepAliveInterval = 45_000 } = {}) {
             keepAlive$: requestSubject.pipe(rxjs.startWith(null), rxjs.switchMap(() => rxjs.interval(keepAliveInterval).pipe(rxjs.switchMap(() => new rxjs.Observable(subscriber => client.requestSubject.next({
                 message: { janus: "keepalive", session_id: sessionId },
                 stacktrace: new Error(),
-                fulfill() {
-                    subscriber.complete();
-                },
-                reject(err) {
-                    subscriber.next(err);
-                    subscriber.complete();
+                callback(result) {
+                    result.match(() => {
+                        subscriber.complete();
+                    }, err => {
+                        subscriber.next(err);
+                        subscriber.complete();
+                    });
                 }
             }))))), rxjs.share()),
             destroy() {
                 client.requestSubject.next({
                     message: { janus: 'destroy', session_id: sessionId },
                     stacktrace: new Error(),
-                    fulfill: rxjs.noop,
-                    reject: err => console.error('JanusSession destroy fail', sessionId, err)
+                    callback(result) {
+                        result.orTee(err => console.error('JanusSession destroy fail', sessionId, err));
+                    }
                 });
             }
         };

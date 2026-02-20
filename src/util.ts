@@ -12,12 +12,16 @@ export function request<T>(
       message,
       timeout,
       stacktrace,
-      fulfill(response) {
-        subscriber.next(response as T)
-        subscriber.complete()
-      },
-      reject(err) {
-        subscriber.error(err)
+      callback(result) {
+        result.match(
+          response => {
+            subscriber.next(response as T)
+            subscriber.complete()
+          },
+          err => {
+            subscriber.error(err)
+          }
+        )
       }
     })
   )

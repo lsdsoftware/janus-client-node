@@ -5,12 +5,13 @@ export function request(requestSubject, message, { timeout } = {}) {
         message,
         timeout,
         stacktrace,
-        fulfill(response) {
-            subscriber.next(response);
-            subscriber.complete();
-        },
-        reject(err) {
-            subscriber.error(err);
+        callback(result) {
+            result.match(response => {
+                subscriber.next(response);
+                subscriber.complete();
+            }, err => {
+                subscriber.error(err);
+            });
         }
     }));
 }
