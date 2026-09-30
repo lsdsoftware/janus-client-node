@@ -23,11 +23,17 @@ export function createClient(websocketUrl, websocketOpts) {
                     else {
                         function waitResponse(timeout) {
                             return new rxjs.Observable(subscriber => {
-                                pendingTxs.set(txId, response => {
+                                const handler = (response) => {
                                     subscriber.next(response);
                                     subscriber.complete();
-                                });
-                                return () => pendingTxs.delete(txId);
+                                };
+                                pendingTxs.set(txId, handler);
+                                // An ACK installs the final-response handler before this
+                                // subscription tears down. Only remove our own handler.
+                                return () => {
+                                    if (pendingTxs.get(txId) === handler)
+                                        pendingTxs.delete(txId);
+                                };
                             }).pipe(timeout == Infinity ? rxjs.identity : rxjs.timeout({
                                 first: timeout,
                                 with: () => rxjs.of({ janus: 'error', error: { code: 408, reason: 'Request timeout' } })

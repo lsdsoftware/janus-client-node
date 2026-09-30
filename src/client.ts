@@ -34,11 +34,16 @@ export function createClient(
                 } else {
                   function waitResponse(timeout: number) {
                     return new rxjs.Observable<Record<string, unknown>>(subscriber => {
-                      pendingTxs.set(txId, response => {
+                      const handler = (response: Record<string, unknown>) => {
                         subscriber.next(response)
                         subscriber.complete()
-                      })
-                      return () => pendingTxs.delete(txId)
+                      }
+                      pendingTxs.set(txId, handler)
+                      // An ACK installs the final-response handler before this
+                      // subscription tears down. Only remove our own handler.
+                      return () => {
+                        if (pendingTxs.get(txId) === handler) pendingTxs.delete(txId)
+                      }
                     }).pipe(
                       timeout == Infinity ? rxjs.identity : rxjs.timeout({
                         first: timeout,
